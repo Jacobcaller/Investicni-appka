@@ -15,14 +15,14 @@ while True:
         while True:
             registrace_jmeno = input("Zadejte jméno kterým se budete přihlašovat: ")
             #Pokud jméno již je v databázi, vypíše se hláška, a nabídka s možnostmi.
-            if databaze.overeni_jmena(registrace_jmeno) == False:
+            if databaze.overeni_jmena(registrace_jmeno.lower()) == False:
                 print("Zadané jméno již existuje. Chcete si zvolit jiné nebo pokračovat na login?")
                 if input("Zadejte 1 pro vyzkoušení jiného jména nebo 2 pro pokračování na login.") == "2":
                     break
             else:
                 #Pokud se jméno v databázi nenachází, pomocí funkce databaze.registrace se zadané údaje vloží do databáze.
                 registrace_heslo = input("Zadejte heslo pod kterým se budete přihlašovat: ")
-                databaze.registrace(registrace_jmeno,registrace_heslo)
+                databaze.registrace(registrace_jmeno.lower(),registrace_heslo)
                 print("Gratulujeme, nyní jste zaregistrováni v našem dotazníku. Pro pokračování se přihlašte vámi zadanými údaji.")
                 break
 
@@ -31,13 +31,13 @@ while True:
         login_jmeno = input("Zadejte vaše přihlašovací jméno: ")
         login_heslo = input("Zadejte vaše heslo: ")
         #Pokud se jméno neshoduje s heslem, nebo zadané údaje nejsou v databázi, vypíše se chybová hláška, a nabídka s možnostmi.
-        if databaze.login(login_jmeno,login_heslo) == False:
+        if databaze.login(login_jmeno.lower(),login_heslo) == False:
             print("Zadal jste špatné jméno nebo heslo.")
             if input("Zadejte 1 pokud to chcete zkusit znovu nebo 2 pro navrácení k registraci: ") == "2":
                 break
         else:
             #Při úspěšném zadání údajů se ukončí smyčka while ve které běží login.
-            print("Vítejte",login_jmeno,".")
+            print("Vítejte",login_jmeno.lower(),".")
             #Do proměnné pokracovat se uloží hodnota False
             pokracovat = False
             break
