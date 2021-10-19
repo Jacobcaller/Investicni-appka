@@ -1,12 +1,23 @@
 import sqlite3
-#TABLE uzivatele
-# #     login_uzivatele text,
-# #     heslo_uzivatele text
+#Tímto příkazem jsem vytvořil TABLE uzivatele
+# c.execute("""CREATE TABLE uzivatele(
+#     login_uzivatele text,
+#     heslo_uzivatele text
+# )""")
 
 conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
 c = conn.cursor()
 
-#Zajišťuje registraci, a zapsání přihlašovacích údajů nového uživatele do systému.
+#Tato funkce ověřuje, zda se jméno zadané uživatelem náhodou již nenachází v databázi. Pokud se v ní nachází, funkce vrátí False. 
+def overeni_jmena(jmeno):
+    conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
+    c = conn.cursor()
+    if c.execute('SELECT EXISTS(SELECT * FROM uzivatele WHERE login_uzivatele =?)',(jmeno,)).fetchone() == (1,):
+        conn.commit()
+        conn.close()
+        return False
+
+#Tato funkce zajišťuje registraci, a zapsání přihlašovacích údajů nového uživatele do systému.
 def registrace(jmeno,heslo):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
@@ -14,11 +25,11 @@ def registrace(jmeno,heslo):
     conn.commit()
     conn.close()
 
-#Ověří, zda-li jsou zadané údaje v databázi, a zda jméno, a heslo souhlasí.
+#Tato funkce ověří, zda-li jsou zadané údaje v databázi, a zda jméno, a heslo souhlasí.
 def login(jmeno,heslo):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
-    #SELECT EXISTS zjistí jestli vybraná věc existuje, a .fetchone() a vrátí výsledek SELECT EXISTS - vrátí (1,) pokud vybraná věc existuje , a (0,) pokud ne.
+    #Funkce SELECT EXISTS zjistí, jestli vybraná věc existuje, a funkce .fetchone() vrátí výsledek funkce SELECT EXISTS(vrátí (1,) pokud vybraná věc existuje , a (0,) pokud ne.)
     if c.execute('SELECT EXISTS(SELECT * FROM uzivatele WHERE heslo_uzivatele =? AND login_uzivatele =?)',(heslo,jmeno)).fetchone() == (1,):
         conn.commit()
         conn.close()
