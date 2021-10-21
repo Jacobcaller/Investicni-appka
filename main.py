@@ -6,7 +6,7 @@ Pro přihlášení k existujícímu účtu stisněte Enter.
 """)
 #Uživatel si zvolí zda-li se chce zaregistrovat, nebo přihlásit.
 #Pokud se chce zaregistrovat, zadá jméno, a heslo. Ve funkci databaze.overeni_jmena proběhne ověření, zda-li se zadané jméno již nenachází v databázi.
-#Pokud oveření proběhne bez problému. Data se zapíšou do databáze pomocí funkce databaze.registrace, a uživatel se s nimi může přihlásit. 
+#Pokud oveření proběhne bez problému. Data se zapíšou do databáze pomocí funkce databaze.registrace, a uživatel se s nimi může přihlásit.
 while True:
     while True:
         #Proměnná pokracovat slouží pro ukončení celé smyčky, ve které běží sekvence Login/registrace. Hodnota True je jen placeholder.
@@ -44,9 +44,33 @@ while True:
                 break
         #Protože proměnná pokracovat je False, ukončí se celá smyčka while, ve které běží sekvence login/registrace.
         break
-    
+    #Tato podmínka zajišťuje, že program neskončí hned po přihlášení.
     if pokracovat == False:
-        break
-
-
-
+        while True:
+            print("""Operace:
+    1. Zobrazit vaše portfolio.
+    2. Procházet dostupné fondy.
+    3. Prodej vašich cenných papírů
+    4. Vklad prostředků na účet
+    5. Vrátit se k loginu/registraci
+    6. Ukončí program.
+            """)
+            operace = input("Zadejte číslo operace kterou chcete provést: ")
+            if operace == "1":
+                databaze.vypis_portfolia(login_jmeno)
+            elif operace == "2":
+                pass
+            elif operace == "3":
+                pass
+            elif operace == "4":
+                pass
+            elif operace == "5":
+                break
+            elif operace =="6":
+                break
+            else:
+                print("Tato možnost se v seznamu nenachází.\n")
+        if operace == "6":
+            print("Na viděnou příště.")
+            break
+                
