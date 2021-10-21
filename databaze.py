@@ -5,8 +5,27 @@ import sqlite3
 #     heslo_uzivatele text
 # )""")
 
+# c.execute("""CREATE TABLE fondy(
+#     nazev_fondu text,
+#     vlastnici_fondu text,
+#     min_cena real,
+#     max_cena real
+# )""")
+# c.execute ("INSERT INTO fondy VALUES('Bohatství','admin','2.0310','2.6017')")
+# c.execute("""CREATE TABLE nakupy(
+# # nazev_fondu text,
+# # kupec text,
+# # cena_nakupu real,
+# # mnozstvi real
+# # )""")
+# conn.commit()
+# conn.close()
+# c.execute ("INSERT INTO nakupy VALUES('Bohatství','admin','2.0310','2.5')")
 conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
 c = conn.cursor()
+#Testovací výpis
+# print(c.execute("SELECT * FROM fondy").fetchall())
+
 
 #Tato funkce ověřuje, zda se jméno zadané uživatelem náhodou již nenachází v databázi. Pokud se v ní nachází, funkce vrátí False. 
 def overeni_jmena(jmeno):
@@ -39,9 +58,15 @@ def login(jmeno,heslo):
         conn.close()
         return False
 
+def vypis_portfolia(jmeno):
+    conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
+    c = conn.cursor()
+    if c.execute('SELECT EXISTS(SELECT * FROM fondy WHERE vlastnici_fondu =?)',(jmeno,)).fetchone() == (1,):
+        print(c.execute('SELECT * FROM nakupy WHERE kupec =?',(jmeno,)).fetchall())
+    else:
+        print("Momentálně nevlastníte podíl v žádném fondu.")
+    conn.commit()
+    conn.close()
 
 conn.commit()
 conn.close()
-
-
-
