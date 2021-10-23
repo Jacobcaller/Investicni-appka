@@ -1,33 +1,9 @@
 import sqlite3
-#Tímto příkazem jsem vytvořil TABLE uzivatele
-# c.execute("""CREATE TABLE uzivatele(
-#     login_uzivatele text,
-#     heslo_uzivatele text
-# )""")
+import random
 
-# c.execute("""CREATE TABLE fondy(
-#     nazev_fondu text,
-#     vlastnici_fondu text,
-#     min_cena real,
-#     max_cena real
-# )""")
-# c.execute ("INSERT INTO fondy VALUES('Bohatství','admin','2.0310','2.6017')")
-# c.execute("""CREATE TABLE nakupy(
-# # nazev_fondu text,
-# # kupec text,
-# # cena_nakupu real,
-# # mnozstvi real
-# # )""")
-# conn.commit()
-# conn.close()
-# c.execute ("INSERT INTO nakupy VALUES('Bohatství','admin','2.0310','2.5')")
 conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
 c = conn.cursor()
-#Testovací výpis
-# print(c.execute("SELECT * FROM fondy").fetchall())
-
-
-#Tato funkce ověřuje, zda se jméno zadané uživatelem náhodou již nenachází v databázi. Pokud se v ní nachází, funkce vrátí False. 
+#Tato funkce ověřuje, zda se jméno zadané uživatelem náhodou již nenachází v databázi. Pokud se v ní nachází, funkce vrátí False.
 def overeni_jmena(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
@@ -57,14 +33,46 @@ def login(jmeno,heslo):
         conn.commit()
         conn.close()
         return False
-
+print(c.execute("SELECT * FROM fondy").fetchall())
+#Funkce pro výpis portfolia + v ní funkce na nákup
 def vypis_portfolia(jmeno):
+    doc_db = sqlite3.connect(':memory:') 
+    c_doc = doc_db.cursor()
+
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
-    if c.execute('SELECT EXISTS(SELECT * FROM fondy WHERE vlastnici_fondu =?)',(jmeno,)).fetchone() == (1,):
-        print(c.execute('SELECT * FROM nakupy WHERE kupec =?',(jmeno,)).fetchall())
+    for i in c.execute("SELECT * FROM fondy").fetchall():
+        nazev_fondu = i[0]
+        hodnota_od = i[1]
+        hodnota_do = i[2]
+        hodnota = round(random.uniform(hodnota_od,hodnota_do),3)
+        print("Název fondu: ",nazev_fondu)
+        print("Předchozí cena fondu: ", i[4])
+        print("Aktuální cena fondu: ", i[3],"\n")
+        c.execute ('UPDATE fondy SET aktualni_hodnota = ? WHERE nazev_fondu = ?',(hodnota,nazev_fondu))
+        conn.commit()
+        
+
+    #VÝPIS PORTFOLIA + aktuální ceny fondů uložené do proměnných
+    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ?)",(jmeno,)).fetchall() == (1,):
+        print(c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ?)',(jmeno,)).fetchall())
     else:
-        print("Momentálně nevlastníte podíl v žádném fondu.")
+        print("V tuto chvíli je vaše portfolio prázdné.")
+
+    if input("Chcete provést nákup akcii?(a/n)") == "a":
+        pass
+    if input("Chcete provést nákup akcii?(a/n)") == "a":
+        pass
+    if input("Chcete zobrazit historii transakcí?(a/n):") == "a":
+        if c.execute('SELECT EXISTS(SELECT * FROM nakupy WHERE kupec =?)',(jmeno,)).fetchone() == (1,):
+            print("Toto je seznam všech vašich transakcí: ")
+            for i in c.execute('SELECT rowid,* FROM nakupy WHERE kupec =?',(jmeno,)).fetchall():
+                print(f"{i[0]}. Nakoupil jste {round(i[4],3)}ks akcií fondu {i[1]}. Cena 1ks akcie byla {round(i[3],3)}Kč. Celková cena transakce byla {round(i[4]*i[3],3)}Kč.")
+        else:
+            print("Zatím jste neprovedl žádné transakce.\n")
+            
+    for i in c.execute("SELECT nazev_fondu,aktualni_hodnota FROM fondy").fetchall():
+        c.execute ('UPDATE fondy SET posledni_hodnota = ? WHERE nazev_fondu = ?',(i[1],i[0]))
     conn.commit()
     conn.close()
 
