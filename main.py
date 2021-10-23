@@ -53,7 +53,7 @@ while True:
     3. Prodej vašich cenných papírů
     4. Vklad prostředků na účet
     5. Vrátit se k loginu/registraci
-    6. Ukončí program.
+    6. Ukončí program
             """)
             operace = input("Zadejte číslo operace kterou chcete provést: ")
             if operace == "1":
