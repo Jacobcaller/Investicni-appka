@@ -34,35 +34,37 @@ def login(jmeno,heslo):
         conn.close()
         return False
 print(c.execute("SELECT * FROM fondy").fetchall())
+
+
 #Funkce pro výpis portfolia + v ní funkce na nákup
 def vypis_portfolia(jmeno):
-    doc_db = sqlite3.connect(':memory:') 
-    c_doc = doc_db.cursor()
-
+    # doc_db = sqlite3.connect(':memory:') 
+    # c_doc = doc_db.cursor()
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
     for i in c.execute("SELECT * FROM fondy").fetchall():
         nazev_fondu = i[0]
-        hodnota_od = i[1]
-        hodnota_do = i[2]
-        hodnota = round(random.uniform(hodnota_od,hodnota_do),3)
-        print("Název fondu: ",nazev_fondu)
+        print(nazev_fondu)
+        hodnota = round(random.uniform(i[1],i[2]),3)
         print("Předchozí cena fondu: ", i[4])
-        print("Aktuální cena fondu: ", i[3],"\n")
-        c.execute ('UPDATE fondy SET aktualni_hodnota = ? WHERE nazev_fondu = ?',(hodnota,nazev_fondu))
-        conn.commit()
-        
+        print("Aktuální cena fondu je: ",hodnota)
+        c.execute ('UPDATE fondy SET aktualni_hodnota = ?,posledni_hodnota = ? WHERE nazev_fondu = ?',(hodnota, hodnota, nazev_fondu))
 
-    #VÝPIS PORTFOLIA + aktuální ceny fondů uložené do proměnných
+
     if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ?)",(jmeno,)).fetchall() == (1,):
         print(c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ?)',(jmeno,)).fetchall())
     else:
         print("V tuto chvíli je vaše portfolio prázdné.")
 
+
     if input("Chcete provést nákup akcii?(a/n)") == "a":
         pass
+
+
     if input("Chcete provést nákup akcii?(a/n)") == "a":
         pass
+
+
     if input("Chcete zobrazit historii transakcí?(a/n):") == "a":
         if c.execute('SELECT EXISTS(SELECT * FROM nakupy WHERE kupec =?)',(jmeno,)).fetchone() == (1,):
             print("Toto je seznam všech vašich transakcí: ")
@@ -70,11 +72,13 @@ def vypis_portfolia(jmeno):
                 print(f"{i[0]}. Nakoupil jste {round(i[4],3)}ks akcií fondu {i[1]}. Cena 1ks akcie byla {round(i[3],3)}Kč. Celková cena transakce byla {round(i[4]*i[3],3)}Kč.")
         else:
             print("Zatím jste neprovedl žádné transakce.\n")
-            
-    for i in c.execute("SELECT nazev_fondu,aktualni_hodnota FROM fondy").fetchall():
-        c.execute ('UPDATE fondy SET posledni_hodnota = ? WHERE nazev_fondu = ?',(i[1],i[0]))
+
+        
     conn.commit()
     conn.close()
+    # c_doc.close()
+    
+    
 
 conn.commit()
 conn.close()
