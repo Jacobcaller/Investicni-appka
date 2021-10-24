@@ -49,9 +49,9 @@ while True:
         while True:
             print("""Operace:
     1. Zobrazit vaše portfolio.
-    2. Procházet dostupné fondy.
+    2. Nákup cenných papírů.
     3. Prodej vašich cenných papírů
-    4. Vklad prostředků na účet
+    4. Historie transakcí
     5. Vrátit se k loginu/registraci
     6. Ukončí program
             """)
@@ -59,11 +59,11 @@ while True:
             if operace == "1":
                 databaze.vypis_portfolia(login_jmeno)
             elif operace == "2":
-                pass
+                databaze.nakup_akcii(login_jmeno)
             elif operace == "3":
                 pass
             elif operace == "4":
-                pass
+                databaze.historie_transakci(login_jmeno)
             elif operace == "5":
                 break
             elif operace =="6":
@@ -73,4 +73,3 @@ while True:
         if operace == "6":
             print("Na viděnou příště.")
             break
-                
