@@ -47,7 +47,14 @@ def vypis_portfolia(jmeno):
             print("Název Fondu: ",i[1])
             print("Množství akcií: ",i[2])
             print("Průměrná cena nákupu: ", round(i[3],4))
-            print("Zisk: ", round(i[4],4),"\n")
+            print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
+            if i[4] > 0:
+               print("Zisk: ", round((i[4] * i[2]),4),"Kč\n")
+            elif i[4] < 0:
+                print("Ztráta: ", round((i[4] * i[2]),4),"Kč\n")
+            else:
+                print("Zisk/ztráta: ",i[4],"Kč\n")
+
     else:
         print("V tuto chvíli je vaše portfolio prázdné.")
 
@@ -101,9 +108,47 @@ def nakup_akcii(jmeno):
     conn.close()
 
 def prodej_akcii(jmeno):
-    if input("Chcete provést nákup akcii?(a/n)") == "a":
-        pass
+    conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
+    c = conn.cursor()
+    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii = ?)",(jmeno, 1.0)).fetchall()[0] == (1,):
+        prazdne = 0
+        stav_uctu = c.execute("SELECT stav_uctu FROM uzivatele WHERE login_uzivatele = ?",(jmeno,)).fetchone()[0]
+        pocitadlo = 0
+        for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ?',(jmeno,)).fetchall():
+            pocitadlo += 1
+            print("Číslo fondu: ",pocitadlo)
+            print("Název Fondu: ",i[1])
+            print("Množství akcií: ",i[2])
+            print("Průměrná cena nákupu: ", round(i[3],4))
+            print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
+            if i[4] > 0:
+               print("Zisk: ", round((i[4] * i[2]),4),"Kč\n")
+            elif i[4] < 0:
+                print("Ztráta: ", round((i[4] * i[2]),4),"Kč\n")
+            else:
+                print("Zisk/ztráta: ",i[4],"Kč\n")
+    else:
+        print("V tuto chvíli je vaše portfolio prázdné.")
+        prazdne = 1
 
+
+    if prazdne == 0:
+        fond = input("Vlož číslo fondu kterého akcie chceš odprodat: ")
+        mnozstvi = int(input("Zadej množství akcii které chceš odprodat: "))
+        nazev_kupovaneho_fondu = c.execute("SELECT nazev_fondu FROM portfolio WHERE rowid = ?",(fond,)).fetchone()[0]
+        akt_cena_kup_akc = c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(nazev_kupovaneho_fondu,)).fetchall()[0][0]
+        mnozstvi_akcii_v_ptf = c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()[0][2]
+        print(mnozstvi_akcii_v_ptf)
+        vypis_portfolia = mnozstvi_akcii_v_ptf = c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()
+        if c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()[0][2] >= mnozstvi:
+            cena_prodeje = mnozstvi * akt_cena_kup_akc
+            stav_uctu += cena_prodeje
+            c.execute ('UPDATE uzivatele SET stav_uctu = ? WHERE login_uzivatele = ?',(stav_uctu, jmeno))
+            c.execute ('UPDATE portfolio SET mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',((vypis_portfolia[0][2] - mnozstvi), jmeno, nazev_kupovaneho_fondu))
+            conn.commit()
+            print(f"Prodal jste {round(mnozstvi,3)}ks akcií fondu {nazev_kupovaneho_fondu} za {round(cena_prodeje,3)}Kč.")
+            conn.close()
+        
 def historie_transakci(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
@@ -118,3 +163,6 @@ def historie_transakci(jmeno):
 
 conn.commit()
 conn.close()
+
+#ZMĚNIT PODMÍNKU NA ZOBRAZENÍ PORTFOLIA NA CELKOVÝ POČET AKCIÍ > 0 - PŘIDAT DO NÁKUPU PŘIDÁNÍ MNOŽSTVÍ DO CELKOVÝ POČET AKCIÍ
+#UPRAVIT PRŮMĚRNOU CENU NÁKUPU TAK, ABY SE PRŮBĚŽNĚ AKTUALIZOVALA, UPRAVIT ZISK/ZTRÁTA
