@@ -61,7 +61,7 @@ while True:
             elif operace == "2":
                 databaze.nakup_akcii(login_jmeno)
             elif operace == "3":
-                pass
+                databaze.prodej_akcii(login_jmeno)
             elif operace == "4":
                 databaze.historie_transakci(login_jmeno)
             elif operace == "5":
