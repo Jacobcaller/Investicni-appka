@@ -51,7 +51,7 @@ def vypis_portfolia(jmeno):
             print("Množství akcií: ",i[2])
             print("Průměrná cena nákupu: ", round(i[3],4))
             print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
-            zisk_ztrata = (i[2] * i[3]) - (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0])
+            zisk_ztrata = (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0]) - (i[2] * i[3])
             if zisk_ztrata > 0:
                print("Zisk: ", round(zisk_ztrata,4),"Kč\n")
             elif zisk_ztrata < 0:
@@ -140,7 +140,7 @@ def prodej_akcii(jmeno):
             print("Množství akcií: ",i[2])
             print("Průměrná cena nákupu: ", round(i[3],4))
             print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
-            zisk = (i[2] * i[3]) - (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0])
+            zisk_ztrata = (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0]) - (i[2] * i[3])
             if zisk > 0:
                print("Zisk: ", round(zisk,4),"Kč\n")
             elif zisk < 0:
