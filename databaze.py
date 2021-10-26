@@ -2,6 +2,8 @@ import sqlite3
 import random
 conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
 c = conn.cursor()
+
+
 #Tato funkce ověřuje, zda se jméno zadané uživatelem náhodou již nenachází v databázi. Pokud se v ní nachází, funkce vrátí False.
 def overeni_jmena(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
@@ -41,7 +43,8 @@ def vypis_portfolia(jmeno):
 
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
-
+    stav_uctu = c.execute("SELECT stav_uctu FROM uzivatele WHERE login_uzivatele = ?",(jmeno,)).fetchone()[0]
+    print("\nStav vašich finančích prostředku: ",round(stav_uctu,4),"Kč")
     if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii > 0)",(jmeno,)).fetchall()[0] == (1,):
         for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND mnozstvi_akcii > 0',(jmeno,)).fetchall():
             print("Název Fondu: ",i[1])
@@ -82,12 +85,12 @@ def nakup_akcii(jmeno):
             print("Cena klesla o", round(rozdil,3),"Kč za akcii.")
         elif hodnota == i[5]:
             print("Cena se nezměnila.")
-        print("Se stavem vašeho účtu si můžete koupit",round((stav_uctu / hodnota),4), "ks akcií tohoto fondu.")
+        print("S vaším aktuálním zůstatkem na účtu si můžete koupit",round((stav_uctu / hodnota),4), "ks akcií tohoto fondu.")
         if c.execute("SELECT mnozstvi_akcii FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?",(jmeno,nazev_fondu)).fetchall()[0][0] > 0:
             if (prumerna_cena_v_ptf - hodnota) > 0:
-                print("Aktuální cena za akcii je nižší o ",round((prumerna_cena_v_ptf - hodnota),4),"Kč za kus, než je vaše průměrná nákupní cena akcie v tomto fondu.")
+                print("Aktuální cena za akcii je nižší o ",round((prumerna_cena_v_ptf - hodnota),4),"Kč za kus, než je vaše průměrná nákupní cena akcie tohoto fondu.")
             elif (prumerna_cena_v_ptf - hodnota) < 0:
-                print("Aktuální cena za akcii je vyšší o ",round((hodnota - prumerna_cena_v_ptf),4),"Kč za kus, než je vaše průměrná nákupní cena akcie v tomto fondu.")
+                print("Aktuální cena za akcii je vyšší o ",round((hodnota - prumerna_cena_v_ptf),4),"Kč za kus, než je vaše průměrná nákupní cena akcie tohoto fondu.")
             else:
                 print("Aktuální cena za kus této akcie je stejná jako vaše průměrná nákupní cena v tomto fondu.")
 
@@ -160,6 +163,7 @@ def prodej_akcii(jmeno):
             stav_uctu += cena_prodeje
             c.execute ('UPDATE uzivatele SET stav_uctu = ? WHERE login_uzivatele = ?',(stav_uctu, jmeno))
             c.execute ('UPDATE portfolio SET mnozstvi_akcii = ?, celkove_mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',((vypis_portfolia[0][2] - mnozstvi), (vypis_portfolia[0][5] - mnozstvi), jmeno, nazev_prodavaneho_fondu))
+            c.execute("INSERT INTO prodeje VALUES(?,?,?,?)",(nazev_prodavaneho_fondu, jmeno, akt_cena_kup_akc, mnozstvi))
             if (vypis_portfolia[0][2] - mnozstvi) == 0:
                 c.execute ('UPDATE portfolio SET prumerna_cena_nakupu = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',(0, jmeno, nazev_prodavaneho_fondu))
                 conn.commit()
@@ -173,12 +177,23 @@ def prodej_akcii(jmeno):
 def historie_transakci(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
+    cislo_transakce_nakup = 0
     if c.execute('SELECT EXISTS(SELECT * FROM nakupy WHERE kupec =?)',(jmeno,)).fetchone() == (1,):
-        print("Toto je seznam všech vašich transakcí: ")
+        print("\nToto je seznam všech vašich nákupních transakcí: ")
         for i in c.execute('SELECT rowid,* FROM nakupy WHERE kupec =?',(jmeno,)).fetchall():
-            print(f"{i[0]}. Nakoupil jste {round(i[4],3)}ks akcií fondu {i[1]}. Cena 1ks akcie byla {round(i[3],3)}Kč. Celková cena transakce byla {round(i[4]*i[3],3)}Kč.")
+            cislo_transakce_nakup += 1
+            print(f"{cislo_transakce_nakup}. Nakoupil jste {round(i[4],3)}ks akcií fondu {i[1]}. Cena 1ks akcie byla {round(i[3],3)}Kč. Celková cena transakce byla {round(i[4]*i[3],3)}Kč.")
+        else:
+            print("Zatím jste neprovedl žádné nákupní transakce.\n") 
+        
+    cislo_transakce_prodej = 0
+    if c.execute('SELECT EXISTS(SELECT * FROM prodeje WHERE prodejce =?)',(jmeno,)).fetchone() == (1,):
+        print("\nToto je seznam všech vašich prodejních transakcí: ")
+        for i in c.execute('SELECT rowid,* FROM prodeje WHERE prodejce =?',(jmeno,)).fetchall():
+            cislo_transakce_prodej += 1
+            print(f"{cislo_transakce_prodej}. Prodal jste {round(i[4],3)}ks akcií fondu {i[1]}. Cena 1ks akcie byla {round(i[3],3)}Kč. Celková cena transakce byla {round(i[4]*i[3],3)}Kč.")
     else:
-        print("Zatím jste neprovedl žádné transakce.\n")   
+        print("Zatím jste neprovedl žádné prodejní transakce.\n") 
     conn.commit()
     conn.close()
 
