@@ -36,28 +36,30 @@ def login(jmeno,heslo):
         conn.close()
         return False
 
-#Funkce pro výpis portfolia + v ní funkce na nákup
+#Funkce pro výpis portfolia
 def vypis_portfolia(jmeno):
 
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
 
-    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii = ?)",(jmeno, 1.0)).fetchall()[0] == (1,):
-        for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ?',(jmeno,)).fetchall():
+    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii > 0)",(jmeno,)).fetchall()[0] == (1,):
+        for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND mnozstvi_akcii > 0',(jmeno,)).fetchall():
             print("Název Fondu: ",i[1])
             print("Množství akcií: ",i[2])
             print("Průměrná cena nákupu: ", round(i[3],4))
             print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
-            if i[4] > 0:
-               print("Zisk: ", round((i[4] * i[2]),4),"Kč\n")
-            elif i[4] < 0:
-                print("Ztráta: ", round((i[4] * i[2]),4),"Kč\n")
+            zisk = (i[2] * i[3]) - (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0])
+            if zisk > 0:
+               print("Zisk: ", round(zisk,4),"Kč\n")
+            elif zisk < 0:
+                print("Ztráta: ", round(zisk,4),"Kč\n")
             else:
-                print("Zisk/ztráta: ",i[4],"Kč\n")
+                print("Zisk/ztráta: ",zisk,"Kč\n")
 
     else:
         print("V tuto chvíli je vaše portfolio prázdné.")
 
+#Funkce pro nákup akcií
 def nakup_akcii(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
@@ -65,24 +67,34 @@ def nakup_akcii(jmeno):
     # VÝPIS FONDŮ A JEJICH AKTUÁLNÍCH CEN
     for i in c.execute("SELECT rowid, * FROM fondy").fetchall():
         nazev_fondu = i[1]
-        print("Číslo fondu: ",i[0])
+        print("\nČíslo fondu: ",i[0])
         print(nazev_fondu)
         hodnota = round(random.uniform(i[2],i[3]),4)
         print("Předchozí cena fondu: ", i[5])
         print("Aktuální cena fondu je: ",hodnota,"Kč")
+        prumerna_cena_v_ptf = c.execute("SELECT prumerna_cena_nakupu FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?",(jmeno,nazev_fondu)).fetchall()[0][0]
         if hodnota > i[5]:
             rozdil = hodnota - i[5]
-            print("Cena vzrostla o", round(rozdil,3),"Kč za akcii.\n")
+            print("Cena vzrostla o", round(rozdil,3),"Kč za akcii.")
         elif hodnota < i[5]:
             rozdil = i[5] - hodnota
-            print("Cena klesla o", round(rozdil,3),"Kč za akcii.\n")
-        else:
+            print("Cena klesla o", round(rozdil,3),"Kč za akcii.")
+        elif hodnota == i[5]:
             print("Cena se nezměnila.")
+        if c.execute("SELECT mnozstvi_akcii FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?",(jmeno,nazev_fondu)).fetchall()[0][0] > 0:
+            if (prumerna_cena_v_ptf - hodnota) > 0:
+                print("Aktuální cena za akcii je nižší o ",round((prumerna_cena_v_ptf - hodnota),4),"Kč za kus, než je vaše průměrná nákupní cena akcie v tomto fondu.")
+            elif (prumerna_cena_v_ptf - hodnota) < 0:
+                print("Aktuální cena za akcii je vyšší o ",round((hodnota - prumerna_cena_v_ptf),4),"Kč za kus, než je vaše průměrná nákupní cena akcie v tomto fondu.")
+            else:
+                print("Aktuální cena za kus této akcie je stejná jako vaše průměrná nákupní cena v tomto fondu.")
+
+        
         c.execute ('UPDATE fondy SET aktualni_hodnota = ?,posledni_hodnota = ? WHERE nazev_fondu = ?',(hodnota, hodnota, nazev_fondu))
         conn.commit()
 
     stav_uctu = c.execute("SELECT stav_uctu FROM uzivatele WHERE login_uzivatele = ?",(jmeno,)).fetchone()[0]
-    print("Stav vašich finančích prostředku: ",stav_uctu,"Kč")
+    print("Stav vašich finančích prostředku: ",round(stav_uctu,4),"Kč")
     if input("Chcete provést nákup akcii?(a/n)") == "a":
         fond = input("Vlož číslo fondu do kterého chceš investovat: ")
         mnozstvi = int(input("Zadej množství akcii které chceš koupit: "))
@@ -94,12 +106,11 @@ def nakup_akcii(jmeno):
             vypis_portfolio = c.execute("SELECT * FROM portfolio WHERE majitel_portfolia =? AND nazev_fondu =?",(jmeno,nazev_kupovaneho_fondu)).fetchall()
             mnozstvi_nakup = mnozstvi + vypis_portfolio[0][2]
             prumerna_cena = ((vypis_portfolio[0][3] * vypis_portfolio[0][2])+celkova_cena) / (vypis_portfolio[0][2]+mnozstvi)
-            zisk = akt_cena_kup_akc - vypis_portfolio[0][3]
             c.execute ('UPDATE uzivatele SET stav_uctu = ? WHERE login_uzivatele = ?',(stav_uctu, jmeno))
             #INSERT INTO NAKUPY
             c.execute("INSERT INTO nakupy VALUES(?,?,?,?)",(nazev_kupovaneho_fondu, jmeno, celkova_cena, mnozstvi))
             #UPDATE HODNOTY V PORTFOLIO
-            c.execute ('UPDATE portfolio SET mnozstvi_akcii = ?, prumerna_cena_nakupu = ?, zisk = ?, celkove_mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',(mnozstvi_nakup, prumerna_cena, zisk, 1, jmeno, nazev_kupovaneho_fondu))
+            c.execute ('UPDATE portfolio SET mnozstvi_akcii = ?, prumerna_cena_nakupu = ?, celkove_mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',(mnozstvi_nakup, prumerna_cena, (vypis_portfolio[0][2]+mnozstvi_nakup), jmeno, nazev_kupovaneho_fondu))
             print(f"Potvrzujeme vaši koupi {mnozstvi}ks cenných papírů fondu {nazev_kupovaneho_fondu}, ve výši {akt_cena_kup_akc}Kč za kus, v celkové hodnotě {celkova_cena}Kč.")
         else:
             print("Na tuto transakci nemáte dostatečné finanční prostředky.")
@@ -107,48 +118,56 @@ def nakup_akcii(jmeno):
     conn.commit()
     conn.close()
 
+#Funkce pro prodej akcií
 def prodej_akcii(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
-    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii = ?)",(jmeno, 1.0)).fetchall()[0] == (1,):
+    if c.execute("SELECT EXISTS(SELECT * FROM portfolio WHERE majitel_portfolia = ? AND celkove_mnozstvi_akcii > 0)",(jmeno,)).fetchall()[0] == (1,):
         prazdne = 0
         stav_uctu = c.execute("SELECT stav_uctu FROM uzivatele WHERE login_uzivatele = ?",(jmeno,)).fetchone()[0]
         pocitadlo = 0
-        for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ?',(jmeno,)).fetchall():
+        fond_list = []
+        for i in c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND mnozstvi_akcii > 0',(jmeno,)).fetchall():
+            fond_list.append(i[1])
             pocitadlo += 1
             print("Číslo fondu: ",pocitadlo)
             print("Název Fondu: ",i[1])
             print("Množství akcií: ",i[2])
             print("Průměrná cena nákupu: ", round(i[3],4))
             print("Aktuální cena za akcii: ", c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(i[1],)).fetchall()[0][0])
-            if i[4] > 0:
-               print("Zisk: ", round((i[4] * i[2]),4),"Kč\n")
-            elif i[4] < 0:
-                print("Ztráta: ", round((i[4] * i[2]),4),"Kč\n")
+            zisk = (i[2] * i[3]) - (i[2] * c.execute('SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?',(i[1],)).fetchall()[0][0])
+            if zisk > 0:
+               print("Zisk: ", round(zisk,4),"Kč\n")
+            elif zisk < 0:
+                print("Ztráta: ", round(zisk,4),"Kč\n")
             else:
-                print("Zisk/ztráta: ",i[4],"Kč\n")
+                print("Zisk/ztráta: ",zisk,"Kč\n")
     else:
         print("V tuto chvíli je vaše portfolio prázdné.")
         prazdne = 1
-
+        return
 
     if prazdne == 0:
-        fond = input("Vlož číslo fondu kterého akcie chceš odprodat: ")
+        fond = int(input("Vlož číslo fondu kterého akcie chceš odprodat: "))
         mnozstvi = int(input("Zadej množství akcii které chceš odprodat: "))
-        nazev_kupovaneho_fondu = c.execute("SELECT nazev_fondu FROM portfolio WHERE rowid = ?",(fond,)).fetchone()[0]
-        akt_cena_kup_akc = c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(nazev_kupovaneho_fondu,)).fetchall()[0][0]
-        mnozstvi_akcii_v_ptf = c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()[0][2]
-        print(mnozstvi_akcii_v_ptf)
-        vypis_portfolia = mnozstvi_akcii_v_ptf = c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()
-        if c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_kupovaneho_fondu)).fetchall()[0][2] >= mnozstvi:
+        nazev_prodavaneho_fondu = fond_list[fond-1]
+        akt_cena_kup_akc = c.execute("SELECT aktualni_hodnota FROM fondy WHERE nazev_fondu = ?",(nazev_prodavaneho_fondu,)).fetchall()[0][0]
+        vypis_portfolia = c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ?',(jmeno,nazev_prodavaneho_fondu)).fetchall()
+        if c.execute('SELECT * FROM portfolio WHERE majitel_portfolia = ? AND nazev_fondu = ? AND celkove_mnozstvi_akcii > 0',(jmeno,nazev_prodavaneho_fondu)).fetchall()[0][2] >= mnozstvi:
             cena_prodeje = mnozstvi * akt_cena_kup_akc
             stav_uctu += cena_prodeje
             c.execute ('UPDATE uzivatele SET stav_uctu = ? WHERE login_uzivatele = ?',(stav_uctu, jmeno))
-            c.execute ('UPDATE portfolio SET mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',((vypis_portfolia[0][2] - mnozstvi), jmeno, nazev_kupovaneho_fondu))
+            c.execute ('UPDATE portfolio SET mnozstvi_akcii = ?, celkove_mnozstvi_akcii = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',((vypis_portfolia[0][2] - mnozstvi), (vypis_portfolia[0][5] - mnozstvi), jmeno, nazev_prodavaneho_fondu))
+            if (vypis_portfolia[0][2] - mnozstvi) == 0:
+                c.execute ('UPDATE portfolio SET prumerna_cena_nakupu = ? WHERE majitel_portfolia = ? AND nazev_fondu = ?',(0, jmeno, nazev_prodavaneho_fondu))
+                conn.commit()
             conn.commit()
-            print(f"Prodal jste {round(mnozstvi,3)}ks akcií fondu {nazev_kupovaneho_fondu} za {round(cena_prodeje,3)}Kč.")
+            print(f"Prodal jste {round(mnozstvi,3)}ks akcií fondu {nazev_prodavaneho_fondu} za {round(cena_prodeje,3)}Kč.")
             conn.close()
+        else:
+            print("Zadal jste k prodeji větší množství akcií než vlastníte. Operace byla zrušena.")
         
+#Funkce zaznamenávající transakce
 def historie_transakci(jmeno):
     conn = sqlite3.connect("C:\\Users\\hovor\\Desktop\\kody\\Investicni_appka\\databaze.db")
     c = conn.cursor()
@@ -164,5 +183,5 @@ def historie_transakci(jmeno):
 conn.commit()
 conn.close()
 
-#ZMĚNIT PODMÍNKU NA ZOBRAZENÍ PORTFOLIA NA CELKOVÝ POČET AKCIÍ > 0 - PŘIDAT DO NÁKUPU PŘIDÁNÍ MNOŽSTVÍ DO CELKOVÝ POČET AKCIÍ
-#UPRAVIT PRŮMĚRNOU CENU NÁKUPU TAK, ABY SE PRŮBĚŽNĚ AKTUALIZOVALA, UPRAVIT ZISK/ZTRÁTA
+#OPRAVIT ZISK/ZTRÁTU KDYŽ SE NAKUPUJE OD NULY
+#PŘIDAT PRODEJE TO HISTORIE TRANSAKCÍ
