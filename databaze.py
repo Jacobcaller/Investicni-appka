@@ -23,7 +23,7 @@ def registrace(jmeno,heslo):
     c.execute("INSERT INTO uzivatele VALUES(?,?,?)",(jmeno,heslo,100))
     #Přiřadí defaultní/prázdné hodnoty ze všech fondů do portfolia uživatele.
     for i in c.execute("SELECT nazev_fondu FROM fondy").fetchall():
-        c.execute("INSERT INTO portfolio VALUES(?,?,?,?,?,?)",(jmeno,i[0],0,0,0,0))
+        c.execute("INSERT INTO portfolio VALUES(?,?,?,?,?)",(jmeno,i[0],0,0,0))
         conn.commit()
     conn.commit()
     conn.close()
