@@ -57,13 +57,13 @@ while True:
             """)
             operace = input("Zadejte číslo operace kterou chcete provést: ")
             if operace == "1":
-                databaze.vypis_portfolia(login_jmeno)
+                databaze.vypis_portfolia(login_jmeno.lower())
             elif operace == "2":
-                databaze.nakup_akcii(login_jmeno)
+                databaze.nakup_akcii(login_jmeno.lower())
             elif operace == "3":
-                databaze.prodej_akcii(login_jmeno)
+                databaze.prodej_akcii(login_jmeno.lower())
             elif operace == "4":
-                databaze.historie_transakci(login_jmeno)
+                databaze.historie_transakci(login_jmeno.lower())
             elif operace == "5":
                 break
             elif operace =="6":
